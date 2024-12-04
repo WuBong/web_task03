@@ -1,3 +1,4 @@
+<!--templates/signup.html-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +10,23 @@
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // 이메일 형식 검증
+            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+            if (!emailRegex.test(email)) {
+                errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
+                return;
+            }
 
+            // 비밀번호 확인
+            if (password !== passwordConfirm) {
+                errorMessage.textContent = "비밀번호가 일치하지 않습니다.";
+                return;
+            }
+
+            // 요청 보내기
             const response = await fetch('/register', {
                 method: 'POST',
                 headers: {
@@ -26,14 +43,18 @@
 
             if (response.status === 201) {
                 alert('회원가입 성공: ' + data.message);
+                window.location.href = '/login';  // 회원가입 후 로그인 페이지로 리디렉션
             } else {
-                alert('회원가입 실패: ' + data.message);
+                errorMessage.textContent = data.message;  // 에러 메시지 표시
             }
         }
     </script>
 </head>
 <body>
     <h2>회원가입</h2>
+    
+    <div id="errorMessage" style="color: red;"></div> <!-- 에러 메시지 표시 공간 -->
+
     <form onsubmit="event.preventDefault(); registerUser();">
         <label for="username">Username:</label><br>
         <input type="text" id="username" name="username" required><br><br>
@@ -43,6 +64,9 @@
 
         <label for="password">Password:</label><br>
         <input type="password" id="password" name="password" required><br><br>
+
+        <label for="passwordConfirm">Confirm Password:</label><br>
+        <input type="password" id="passwordConfirm" name="passwordConfirm" required><br><br>
 
         <button type="submit">회원가입</button>
     </form>

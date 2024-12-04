@@ -1,3 +1,4 @@
+#server.py
 from flask import Flask, render_template, request, jsonify
 from model import db
 from forms import register, login

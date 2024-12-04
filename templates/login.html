@@ -1,3 +1,4 @@
+<!--templates/login.html-->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -10,6 +11,8 @@
 
 <div class="container mt-5">
     <h2 class="text-center">Login</h2>
+    
+    <div id="errorMessage" class="text-center text-danger mb-3"></div> <!-- 에러 메시지 표시 공간 -->
     
     <form id="loginForm">
         <div class="form-group">
@@ -48,6 +51,9 @@
             password: password
         };
 
+        // 에러 메시지 초기화
+        document.getElementById("errorMessage").textContent = "";
+
         // AJAX로 로그인 요청 보내기
         fetch("/login", {
             method: "POST",
@@ -59,10 +65,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.token) {
-                alert("Login successful! Token: " + data.token);
-                // 로그인 성공 시, 서버에서 받은 토큰을 저장하거나 리디렉션을 할 수 있습니다.
+                alert("Login successful!");
+                localStorage.setItem("token", data.token);  // 받은 토큰을 로컬 스토리지에 저장
+                window.location.href = "/";  // 로그인 성공 후 홈 페이지로 리디렉션
             } else {
-                alert("Login failed: " + data.message);
+                document.getElementById("errorMessage").textContent = data.message;  // 에러 메시지 표시
             }
         })
         .catch(error => {
@@ -74,3 +81,4 @@
 
 </body>
 </html>
+
