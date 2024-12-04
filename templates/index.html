@@ -1,0 +1,20 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+<body>
+    <div>
+        {% if is_authenticated %}
+            <p>로그인되었습니다!</p>
+            <a href="/logout">로그아웃</a> <!-- 로그아웃 버튼 표시 -->
+        {% else %}
+            <p>로그인되지 않았습니다.</p>
+            <a href="/login">로그인</a> <!-- 로그인 버튼 표시 -->
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-<!--templates/login.html-->
+<!-- login.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,77 +8,70 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-
-<div class="container mt-5">
-    <h2 class="text-center">Login</h2>
-    
-    <div id="errorMessage" class="text-center text-danger mb-3"></div> <!-- 에러 메시지 표시 공간 -->
-    
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" class="form-control" id="email" name="email" required>
+    <div class="container mt-5">
+        <h2 class="text-center">Login</h2>
+        <div id="errorMessage" class="text-center text-danger mb-3"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+        <div class="mt-3 text-center">
+            <p>Don't have an account? <a href="/signup">Sign up here</a></p>
         </div>
-        
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
-    </form>
-    
-    <div class="mt-3 text-center">
-        <p>Don't have an account? <a href="/signup">Sign up here</a></p>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();  // 기본 폼 제출을 막음
 
-<script>
-    // 로그인 폼 제출 처리
-    document.getElementById("loginForm").addEventListener("submit", function(event) {
-        event.preventDefault();  // 기본 폼 제출을 막음
-        
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        
-        // JSON 데이터 만들기
-        const data = {
-            email: email,
-            password: password
-        };
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const errorMessage = document.getElementById("errorMessage");
 
-        // 에러 메시지 초기화
-        document.getElementById("errorMessage").textContent = "";
-
-        // AJAX로 로그인 요청 보내기
-        fetch("/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"  // JSON 형식으로 보내기
-            },
-            body: JSON.stringify(data)  // JSON 문자열로 변환
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.token) {
-                alert("Login successful!");
-                localStorage.setItem("token", data.token);  // 받은 토큰을 로컬 스토리지에 저장
-                window.location.href = "/";  // 로그인 성공 후 홈 페이지로 리디렉션
-            } else {
-                document.getElementById("errorMessage").textContent = data.message;  // 에러 메시지 표시
+            // 이메일 형식 검증
+            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+            if (!emailRegex.test(email)) {
+                errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
+                return;
             }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("An error occurred while logging in.");
-        });
-    });
-</script>
 
+            // 비밀번호 확인
+            if (password.trim() === "") {
+                errorMessage.textContent = "비밀번호를 입력해주세요.";
+                return;
+            }
+
+            const data = { email, password };
+            // 로그인 후 토큰을 쿠키에 저장하는 코드
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    alert("로그인 성공!");
+                    // 쿠키에 JWT 토큰 저장
+                    document.cookie = `token=${data.token}; path=/; max-age=3600`;  // 1시간 동안 유효
+                    window.location.href = "/";  // 로그인 후 홈 페이지로 리디렉션
+                } else {
+                    errorMessage.textContent = data.message;  // 에러 메시지 표시
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                errorMessage.textContent = "서버와의 연결에 문제가 발생했습니다.";
+            });
+
+        });
+    </script>
 </body>
 </html>
-

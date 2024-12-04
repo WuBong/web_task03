@@ -6,48 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입</title>
     <script>
-        async function registerUser() {
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const passwordConfirm = document.getElementById('passwordConfirm').value;
-            const errorMessage = document.getElementById('errorMessage');
-            
-            // 이메일 형식 검증
-            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-            if (!emailRegex.test(email)) {
-                errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
-                return;
-            }
-
-            // 비밀번호 확인
-            if (password !== passwordConfirm) {
-                errorMessage.textContent = "비밀번호가 일치하지 않습니다.";
-                return;
-            }
-
-            // 요청 보내기
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username: username,
-                    email: email,
-                    password: password
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.status === 201) {
-                alert('회원가입 성공: ' + data.message);
-                window.location.href = '/login';  // 회원가입 후 로그인 페이지로 리디렉션
-            } else {
-                errorMessage.textContent = data.message;  // 에러 메시지 표시
-            }
+         async function registerUser() {
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('passwordConfirm').value;
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // 이메일 형식 검증
+        const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+        if (!emailRegex.test(email)) {
+            errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
+            return;
         }
+
+        // 비밀번호 강도 검사
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            errorMessage.textContent = "비밀번호는 최소 8자 이상, 영문자와 숫자를 포함해야 합니다.";
+            return;
+        }
+
+        // 비밀번호 확인
+        if (password !== passwordConfirm) {
+            errorMessage.textContent = "비밀번호가 일치하지 않습니다.";
+            return;
+        }
+
+        // 요청 보내기
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 201) {
+            alert('회원가입 성공: ' + data.message);
+            window.location.href = '/login';  // 회원가입 후 로그인 페이지로 리디렉션
+        } else {
+            errorMessage.textContent = data.message;  // 에러 메시지 표시
+        }
+    }
     </script>
 </head>
 <body>

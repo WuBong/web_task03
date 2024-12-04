@@ -1,3 +1,4 @@
+# forms.py
 import re
 from flask import request, jsonify, current_app as app
 from werkzeug.security import generate_password_hash, check_password_hash
