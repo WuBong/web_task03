@@ -6,6 +6,7 @@ import jwt
 import datetime
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
+import sqlite3
 
 app = Flask(__name__)
 
@@ -119,7 +120,72 @@ def update_user(current_user):
     except Exception as e:
         return jsonify({'message': f'Error: {str(e)}'}), 500
     
-    
+
+def get_db_connection():
+    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
+    conn.row_factory = sqlite3.Row  # 딕셔너리 형식으로 데이터를 반환하도록 설정
+    return conn
+
+@app.route('/jobs')
+def job_list():
+    # SQLite 데이터베이스 연결
+    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
+    cursor = conn.cursor()
+
+    # 기본값 설정
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+    sort_by = request.args.get('sort_by', 'today')
+    search_keyword = request.args.get('search', '')
+    location_filter = request.args.get('location', '')
+    experience_filter = request.args.get('experience', '')
+
+    # 기본 쿼리
+    query = "SELECT * FROM jobs WHERE 1=1"
+
+    # 검색 조건 추가
+    if search_keyword:
+        query += f" AND (title LIKE '%{search_keyword}%' OR company LIKE '%{search_keyword}%' OR requirement LIKE '%{search_keyword}%')"
+
+    # 필터링 조건 추가
+    if location_filter:
+        query += f" AND location LIKE '%{location_filter}%'"
+    if experience_filter:
+        query += f" AND experience LIKE '%{experience_filter}%'"
+
+    # 정렬 기준 추가
+    if sort_by == 'company':
+        query += " ORDER BY company"
+    else:
+        query += " ORDER BY today DESC"
+
+    # 총 공고 수 계산
+    cursor.execute(query)
+    total_jobs = len(cursor.fetchall())
+
+    # 페이지네이션 적용
+    query += f" LIMIT {per_page} OFFSET {offset}"
+    cursor.execute(query)
+    jobs = cursor.fetchall()
+
+    # 총 페이지 수 계산
+    total_pages = (total_jobs // per_page) + (1 if total_jobs % per_page > 0 else 0)
+
+    conn.close()
+
+    # HTML 템플릿 렌더링
+    return render_template(
+        'job_list.html',
+        jobs=jobs,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        total_jobs=total_jobs,
+        search_keyword=search_keyword,
+        location_filter=location_filter,
+        experience_filter=experience_filter,
+    )
 
 
 if __name__ == '__main__':

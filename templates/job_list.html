@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Listings</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Job Listings</h1>
+        
+        <!-- 검색 필터 -->
+        <form method="get" action="/jobs" class="mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="검색어 입력" value="{{ search_keyword }}">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="location" class="form-control" placeholder="지역" value="{{ location_filter }}">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="experience" class="form-control" placeholder="경력" value="{{ experience_filter }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">검색</button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- 공고 목록 -->
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>제목</th>
+                    <th>회사</th>
+                    <th>지역</th>
+                    <th>경력</th>
+                    <th>마감일</th>
+                    <th>상세보기</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if jobs %}
+                    {% for job in jobs %}
+                    <tr>
+                        <td>{{ loop.index + (page - 1) * per_page }}</td>
+                        <td>{{ job[2] }}</td>
+                        <td>{{ job[3] }}</td>
+                        <td>{{ job[6] }}</td>
+                        <td>{{ job[7] }}</td>
+                        <td>{{ job[5] }}</td>
+                        <td>
+                            <a href="{{ job[4] }}" target="_blank" class="btn btn-sm btn-info">상세보기</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">데이터가 없습니다.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- 페이지네이션 -->
+        <nav aria-label="Page navigation">
+            <ul id="pagination" class="pagination justify-content-center">
+                {% for i in range(1, total_pages + 1) %}
+                <li class="page-item {% if i == page %}active{% endif %}">
+                    <a class="page-link" href="/jobs?page={{ i }}&search={{ search_keyword }}&location={{ location_filter }}&experience={{ experience_filter }}">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+</body>
+</html>
