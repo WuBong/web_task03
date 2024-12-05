@@ -77,7 +77,10 @@
                         <td>{{ job[7] }}</td>
                         <td>{{ job[5] }}</td>
                         <td>
-                            <a href="{{ job[4] }}" target="_blank" class="btn btn-sm btn-info">상세보기</a>
+                            <a href="/jobs/{{ job[0] }}" class="btn btn-sm btn-info">상세보기</a>
+                        </td>
+                        <td>
+                        
                         </td>
                     </tr>
                     {% endfor %}
@@ -90,11 +93,14 @@
         </table>
         
         <!-- 페이지네이션 -->
+        <!-- 페이지네이션 -->
         <nav aria-label="Page navigation">
-            <ul id="pagination" class="pagination justify-content-center">
+            <ul id="pagination" 
+                class="pagination justify-content-center flex-wrap gap-2">
                 {% for i in range(1, total_pages + 1) %}
                 <li class="page-item {% if i == page %}active{% endif %}">
-                    <a class="page-link" href="/jobs?page={{ i }}&search={{ search_keyword }}&location={{ location_filter }}&experience={{ experience_filter }}">
+                    <a class="page-link" 
+                    href="/jobs?page={{ i }}&search={{ search_keyword }}&location={{ location_filter }}&experience={{ experience_filter }}">
                         {{ i }}
                     </a>
                 </li>
@@ -102,5 +108,16 @@
             </ul>
         </nav>
     </div>
+
 </body>
 </html>
+
+<style>
+    /* 작은 화면에서 페이지네이션 링크 간격 줄이기 */
+    @media (max-width: 576px) {
+        #pagination .page-link {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>

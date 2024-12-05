@@ -13,3 +13,5 @@ class User(db.Model):
     # 비밀번호 검증 메서드 추가
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
+

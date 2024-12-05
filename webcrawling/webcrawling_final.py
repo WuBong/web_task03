@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     experience TEXT,
     requirement TEXT,
     jobtype TEXT,
-    jobday TEXT
+    jobday TEXT,
+    views INTEGER DEFAULT 0
 )
 ''')
 conn.commit()

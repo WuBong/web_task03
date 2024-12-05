@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ job['title'] }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>{{ job['title'] }}</h1>
+        <p><strong>조회수:</strong> {{ job['views'] }}</p>
+        <table class="table">
+            <tr>
+                <th>회사명</th>
+                <td>{{ job['company'] }}</td>
+            </tr>
+            <tr>
+                <th>공고 링크</th>
+                <td><a href="{{ job['url'] }}" target="_blank">{{ job['url'] }}</a></td>
+            </tr>
+            <tr>
+                <th>마감일</th>
+                <td>{{ job['deadline'] }}</td>
+            </tr>
+            <tr>
+                <th>지역</th>
+                <td>{{ job['location'] }}</td>
+            </tr>
+            <tr>
+                <th>경력</th>
+                <td>{{ job['experience'] }}</td>
+            </tr>
+            <tr>
+                <th>자격 요건</th>
+                <td>{{ job['requirement'] }}</td>
+            </tr>
+            <tr>
+                <th>고용 형태</th>
+                <td>{{ job['jobtype'] }}</td>
+            </tr>
+            <tr>
+                <th>근무 요일</th>
+                <td>{{ job['jobday'] }}</td>
+            </tr>
+            <tr>
+                <th>등록일</th>
+                <td>{{ job['today'] }}</td>
+            </tr>
+        </table>
+        <!-- 관련 공고 추천 -->
+        <h3>관련 공고</h3>
+        {% if related_jobs %}
+            <ul class="list-group">
+                {% for related_job in related_jobs %}
+                <li class="list-group-item">
+                    <a href="/jobs/{{ related_job['id'] }}" class="text-decoration-none">
+                        <strong>{{ related_job['title'] }}</strong> - {{ related_job['company'] }}
+                    </a>
+                    <br>
+                    <small>{{ related_job['location'] }} | {{ related_job['experience'] }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">관련 공고가 없습니다.</p>
+        {% endif %}
+
+        <a href="/jobs" class="btn btn-primary">목록으로 돌아가기</a>
+    </div>
+</body>
+</html>

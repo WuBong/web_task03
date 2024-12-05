@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, m
 from model import db, User
 from forms import register, login
 import jwt
-import datetime
+
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 import sqlite3
@@ -195,6 +195,40 @@ def job_list():
         location_filter=location_filter,
         experience_filter=experience_filter,
     )
+
+#채용공고 상세페이지
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def get_job_detail(job_id):
+    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # 조회수 증가
+    cursor.execute('UPDATE jobs SET views = views + 1 WHERE id = ?', (job_id,))
+    conn.commit()
+
+    # 현재 공고 정보 조회
+    cursor.execute('SELECT * FROM jobs WHERE id = ?', (job_id,))
+    job = cursor.fetchone()
+
+    if not job:
+        conn.close()
+        return render_template('error.html', message="해당 공고를 찾을 수 없습니다."), 404
+
+    # 관련 공고 추천 (location 및 experience 기준)
+    cursor.execute(
+        '''
+        SELECT id, title, company, location, experience 
+        FROM jobs 
+        WHERE location = ? AND experience = ? AND id != ?
+        LIMIT 5
+        ''',
+        (job['location'], job['experience'], job_id)
+    )
+    related_jobs = cursor.fetchall()
+    conn.close()
+
+    return render_template('job_detail.html', job=job, related_jobs=related_jobs)
 
 
 if __name__ == '__main__':
