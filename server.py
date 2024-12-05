@@ -152,7 +152,16 @@ def job_list():
     if location_filter:
         query += f" AND location LIKE '%{location_filter}%'"
     if experience_filter:
-        query += f" AND experience LIKE '%{experience_filter}%'"
+        if experience_filter == "1~5":
+            query += " AND (experience LIKE '%1년%' OR experience LIKE '%2년%' OR experience LIKE '%3년%' OR experience LIKE '%4년%' OR experience LIKE '%5년%')"
+        elif experience_filter == "6~10":
+            query += " AND (experience LIKE '%6년%' OR experience LIKE '%7년%' OR experience LIKE '%8년%' OR experience LIKE '%9년%' OR experience LIKE '%10년%')"
+        elif experience_filter == "11~15":
+            query += " AND (experience LIKE '%11년%' OR experience LIKE '%12년%' OR experience LIKE '%13년%' OR experience LIKE '%14년%' OR experience LIKE '%15년%')"
+        elif experience_filter == "16~":
+            query += " AND (experience LIKE '%16년%' OR experience LIKE '%17년%' OR experience LIKE '%18년%' OR experience LIKE '%19년%' OR experience LIKE '%20년%' OR experience LIKE '%21년%')"
+        else:
+            query += f" AND experience LIKE '%{experience_filter}%'"
 
     # 정렬 기준 추가
     if sort_by == 'company':

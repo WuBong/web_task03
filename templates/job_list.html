@@ -10,17 +10,42 @@
     <div class="container mt-5">
         <h1 class="text-center">Job Listings</h1>
         
-        <!-- 검색 필터 -->
+<!-- 검색 필터 -->
         <form method="get" action="/jobs" class="mb-4">
             <div class="row">
                 <div class="col-md-4">
-                    <input type="text" name="search" class="form-control" placeholder="검색어 입력" value="{{ search_keyword }}">
+                    <input type="text" name="search" class="form-control" placeholder="제목 또는 회사명 또는 학력" value="{{ search_keyword }}">
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="location" class="form-control" placeholder="지역" value="{{ location_filter }}">
+                    <select name="location" class="form-control">
+                        <option value="">모든 지역</option>
+                        <option value="서울" {% if location_filter == "서울" %}selected{% endif %}>서울</option>
+                        <option value="부산" {% if location_filter == "부산" %}selected{% endif %}>부산</option>
+                        <option value="대구" {% if location_filter == "대구" %}selected{% endif %}>대구</option>
+                        <option value="인천" {% if location_filter == "인천" %}selected{% endif %}>인천</option>
+                        <option value="광주" {% if location_filter == "광주" %}selected{% endif %}>광주</option>
+                        <option value="대전" {% if location_filter == "대전" %}selected{% endif %}>대전</option>
+                        <option value="울산" {% if location_filter == "울산" %}selected{% endif %}>울산</option>
+                        <option value="경기" {% if location_filter == "경기" %}selected{% endif %}>경기</option>
+                        <option value="강원" {% if location_filter == "강원" %}selected{% endif %}>강원</option>
+                        <option value="충북" {% if location_filter == "충북" %}selected{% endif %}>충북</option>
+                        <option value="충남" {% if location_filter == "충남" %}selected{% endif %}>충남</option>
+                        <option value="전북" {% if location_filter == "전북" %}selected{% endif %}>전북</option>
+                        <option value="전남" {% if location_filter == "전남" %}selected{% endif %}>전남</option>
+                        <option value="경북" {% if location_filter == "경북" %}selected{% endif %}>경북</option>
+                        <option value="경남" {% if location_filter == "경남" %}selected{% endif %}>경남</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="experience" class="form-control" placeholder="경력" value="{{ experience_filter }}">
+                    <select name="experience" class="form-control">
+                        <option value="">모든 경력</option>
+                        <option value="경력무관" {% if experience_filter == "경력무관" %}selected{% endif %}>경력무관</option>
+                        <option value="신입" {% if experience_filter == "신입" %}selected{% endif %}>신입</option>
+                        <option value="1~5" {% if experience_filter == "1~5" %}selected{% endif %}>1~5년</option>
+                        <option value="6~10" {% if experience_filter == "6~10" %}selected{% endif %}>6~10년</option>
+                        <option value="11~15" {% if experience_filter == "11~15" %}selected{% endif %}>11~15년</option>
+                        <option value="16~" {% if experience_filter == "16~" %}selected{% endif %}>16년 이상</option>
+                    </select>
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">검색</button>
