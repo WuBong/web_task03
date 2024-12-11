@@ -1,6 +1,8 @@
 # model.py
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+
 
 db = SQLAlchemy()
 
@@ -27,4 +29,15 @@ class Job(db.Model):
     jobday = db.Column(db.String(100))
     views = db.Column(db.Integer, default=0)
 
+class Application(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
+    status = db.Column(db.String(20), default='대기중')  # 상태: 대기중, 합격, 불합격 등
+    applied_at = db.Column(db.DateTime, default=datetime.utcnow)  # 지원 일자
+    user = db.relationship('User', backref=db.backref('applications', lazy=True))
+    job = db.relationship('Job', backref=db.backref('applications', lazy=True))
+
+    def __repr__(self):
+        return f"<Application {self.id} - User: {self.user.username}, Job: {self.job.title}, Status: {self.status}>"
 

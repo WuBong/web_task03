@@ -1,9 +1,10 @@
 # server.py
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
-from model import db, User, Job
+from model import db, User, Job, Application
 from forms import register, login
 import jwt
 from sqlalchemy import or_
+from datetime import datetime
 
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -232,7 +233,6 @@ def get_job_detail(job_id):
     # 조회수 증가
     job.views += 1
     db.session.commit()  # 변경 사항을 커밋
-
     # 관련 공고 추천 (location 및 experience 기준)
     related_jobs = Job.query.filter(
         Job.location == job.location,
@@ -240,7 +240,95 @@ def get_job_detail(job_id):
         Job.id != job_id
     ).limit(5).all()  # 최대 5개의 관련 공고만 조회
 
-    return render_template('job_detail.html', job=job, related_jobs=related_jobs)
+    return render_template('job_detail.html', job=job, related_jobs=[])
+
+@app.route('/applications', methods=['POST'])
+@token_required  # 인증 확인 데코레이터
+def apply_for_job(current_user):
+    job_id = request.json.get('job_id')
+    
+    # Job 존재 여부 확인
+    job = Job.query.get(job_id)
+    if not job:
+        return jsonify({"message": "해당 공고를 찾을 수 없습니다."}), 404
+    
+    # 중복 지원 체크
+    existing_application = Application.query.filter_by(user_id=current_user.id, job_id=job_id).first()
+    if existing_application:
+        return jsonify({"message": "이미 지원한 공고입니다."}), 400
+    
+    # 지원 정보 저장
+    new_application = Application(
+        user_id=current_user.id,
+        job_id=job_id,
+        status='대기중',
+        applied_at=datetime.utcnow()
+    )
+    db.session.add(new_application)
+    db.session.commit()
+
+    return jsonify({"message": "지원이 완료되었습니다."}), 201
+
+@app.route('/applications', methods=['GET'])
+@token_required
+def view_applications(current_user):
+    # 사용자 ID를 기반으로 지원 목록 가져오기
+    applications = db.session.query(
+        Application,
+        Job.title,
+        Job.company
+    ).join(Job, Application.job_id == Job.id).filter(Application.user_id == current_user.id).all()
+    
+    # 데이터를 HTML로 전달
+    applications_list = [
+        {
+            "job_id": app.Application.job_id,
+            "company": app.company,
+            "title": app.title,
+            "status": app.Application.status,
+            "applied_at": app.Application.applied_at.strftime("%Y-%m-%d %H:%M:%S")
+        } for app in applications
+    ]
+    return render_template(
+        'applications.html',
+        user_name=current_user.username,
+        applications=applications_list
+    )
+
+@app.route('/applications/<int:job_id>', methods=['DELETE'])
+@token_required  # 인증 확인 데코레이터
+def cancel_application(current_user, job_id):
+    # 사용자 ID와 job_id에 해당하는 지원 내역 찾기
+    application = db.session.query(Application).join(Job, Application.job_id == job_id) \
+        .filter(Application.user_id == current_user.id, Application.job_id == job_id).first()
+
+    if not application:
+        return jsonify({"message": "해당 공고에 대한 지원 내역을 찾을 수 없습니다."}), 404
+
+    # 콘솔로 Application 정보 출력
+    print(f"Application ID: {application.id}")
+    print(f"User ID: {application.user_id}")
+    print(f"Job ID: {application.job_id}")
+    print(f"Status: {application.status}")
+    print(f"Applied At: {application.applied_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # 지원 상태가 '대기중'일 때만 취소 가능
+    if application.status != '대기중':
+        return jsonify({"message": "대기중인 지원만 취소할 수 있습니다."}), 400
+
+    try:
+        # 조건에 맞는 지원 내역 삭제
+        db.session.delete(application)
+        db.session.commit()
+    except Exception as e:
+        # 오류 발생 시 롤백
+        print(e)
+        db.session.rollback()
+        return jsonify({"message": "지원 취소 중 오류가 발생했습니다.", "error": str(e)}), 500
+
+    return jsonify({"message": "지원이 취소되었습니다."}), 200
+
+
 
 
 

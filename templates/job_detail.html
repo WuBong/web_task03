@@ -48,6 +48,8 @@
                 <td>{{ job['today'] }}</td>
             </tr>
         </table>
+         <!-- 지원하기 버튼 -->
+        <button class="btn btn-sm btn-primary apply-button" data-job-id="{{ job.id }}">지원하기</button>
         <!-- 관련 공고 추천 -->
         <h3>관련 공고</h3>
         {% if related_jobs %}
@@ -70,3 +72,43 @@
     </div>
 </body>
 </html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // 모든 지원하기 버튼에 클릭 이벤트 추가
+        document.querySelectorAll(".apply-button").forEach(button => {
+            button.addEventListener("click", () => {
+                const jobId = button.getAttribute("data-job-id");
+
+                // 지원 API 호출
+                fetch('/applications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getCookie('token')}` // 쿠키에서 토큰 가져오기
+                    },
+                    body: JSON.stringify({ job_id: jobId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("지원이 완료되었습니다!");
+                    } else {
+                        alert(data.message || "지원에 실패했습니다.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("지원 요청 중 문제가 발생했습니다.");
+                });
+            });
+        });
+    });
+
+    // 쿠키에서 JWT 토큰 가져오기
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+</script>
