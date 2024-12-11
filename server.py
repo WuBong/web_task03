@@ -1,8 +1,9 @@
 # server.py
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
-from model import db, User
+from model import db, User, Job
 from forms import register, login
 import jwt
+from sqlalchemy import or_
 
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -15,6 +16,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
 
 db.init_app(app)
+
+# 기존 데이터베이스에 새로운 테이블 추가
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # 모든 모델(User, Application)을 한 데이터베이스에 생성
+        print("All tables created successfully in users.db!")
+
+
+
 
 # 로그인 페이지 렌더링
 @app.route('/login', methods=['GET'])
@@ -128,10 +138,6 @@ def get_db_connection():
 
 @app.route('/jobs')
 def job_list():
-    # SQLite 데이터베이스 연결
-    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
-    cursor = conn.cursor()
-
     # 기본값 설정
     page = request.args.get('page', 1, type=int)
     per_page = 20
@@ -142,46 +148,64 @@ def job_list():
     experience_filter = request.args.get('experience', '')
 
     # 기본 쿼리
-    query = "SELECT * FROM jobs WHERE 1=1"
+    query = Job.query
 
     # 검색 조건 추가
     if search_keyword:
-        query += f" AND (title LIKE '%{search_keyword}%' OR company LIKE '%{search_keyword}%' OR requirement LIKE '%{search_keyword}%')"
+        query = query.filter(
+            or_(
+                Job.title.like(f'%{search_keyword}%'),
+                Job.company.like(f'%{search_keyword}%'),
+                Job.requirement.like(f'%{search_keyword}%')
+            )
+        )
 
     # 필터링 조건 추가
     if location_filter:
-        query += f" AND location LIKE '%{location_filter}%'"
+        query = query.filter(Job.location.like(f'%{location_filter}%'))
     if experience_filter:
         if experience_filter == "1~5":
-            query += " AND (experience LIKE '%1년%' OR experience LIKE '%2년%' OR experience LIKE '%3년%' OR experience LIKE '%4년%' OR experience LIKE '%5년%')"
+            query = query.filter(Job.experience.like('%1년%') |
+                                 Job.experience.like('%2년%') |
+                                 Job.experience.like('%3년%') |
+                                 Job.experience.like('%4년%') |
+                                 Job.experience.like('%5년%'))
         elif experience_filter == "6~10":
-            query += " AND (experience LIKE '%6년%' OR experience LIKE '%7년%' OR experience LIKE '%8년%' OR experience LIKE '%9년%' OR experience LIKE '%10년%')"
+            query = query.filter(Job.experience.like('%6년%') |
+                                 Job.experience.like('%7년%') |
+                                 Job.experience.like('%8년%') |
+                                 Job.experience.like('%9년%') |
+                                 Job.experience.like('%10년%'))
         elif experience_filter == "11~15":
-            query += " AND (experience LIKE '%11년%' OR experience LIKE '%12년%' OR experience LIKE '%13년%' OR experience LIKE '%14년%' OR experience LIKE '%15년%')"
+            query = query.filter(Job.experience.like('%11년%') |
+                                 Job.experience.like('%12년%') |
+                                 Job.experience.like('%13년%') |
+                                 Job.experience.like('%14년%') |
+                                 Job.experience.like('%15년%'))
         elif experience_filter == "16~":
-            query += " AND (experience LIKE '%16년%' OR experience LIKE '%17년%' OR experience LIKE '%18년%' OR experience LIKE '%19년%' OR experience LIKE '%20년%' OR experience LIKE '%21년%')"
+            query = query.filter(Job.experience.like('%16년%') |
+                                 Job.experience.like('%17년%') |
+                                 Job.experience.like('%18년%') |
+                                 Job.experience.like('%19년%') |
+                                 Job.experience.like('%20년%') |
+                                 Job.experience.like('%21년%'))
         else:
-            query += f" AND experience LIKE '%{experience_filter}%'"
+            query = query.filter(Job.experience.like(f'%{experience_filter}%'))
 
     # 정렬 기준 추가
     if sort_by == 'company':
-        query += " ORDER BY company"
+        query = query.order_by(Job.company)
     else:
-        query += " ORDER BY today DESC"
+        query = query.order_by(Job.today.desc())
 
     # 총 공고 수 계산
-    cursor.execute(query)
-    total_jobs = len(cursor.fetchall())
+    total_jobs = query.count()
 
     # 페이지네이션 적용
-    query += f" LIMIT {per_page} OFFSET {offset}"
-    cursor.execute(query)
-    jobs = cursor.fetchall()
+    jobs = query.offset(offset).limit(per_page).all()
 
     # 총 페이지 수 계산
     total_pages = (total_jobs // per_page) + (1 if total_jobs % per_page > 0 else 0)
-
-    conn.close()
 
     # HTML 템플릿 렌더링
     return render_template(
@@ -199,36 +223,26 @@ def job_list():
 #채용공고 상세페이지
 @app.route('/jobs/<int:job_id>', methods=['GET'])
 def get_job_detail(job_id):
-    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    # 조회수 증가
-    cursor.execute('UPDATE jobs SET views = views + 1 WHERE id = ?', (job_id,))
-    conn.commit()
-
-    # 현재 공고 정보 조회
-    cursor.execute('SELECT * FROM jobs WHERE id = ?', (job_id,))
-    job = cursor.fetchone()
+    # Job ID에 해당하는 공고 조회
+    job = Job.query.get(job_id)  # job_id에 해당하는 Job 객체를 조회
 
     if not job:
-        conn.close()
         return render_template('error.html', message="해당 공고를 찾을 수 없습니다."), 404
 
+    # 조회수 증가
+    job.views += 1
+    db.session.commit()  # 변경 사항을 커밋
+
     # 관련 공고 추천 (location 및 experience 기준)
-    cursor.execute(
-        '''
-        SELECT id, title, company, location, experience 
-        FROM jobs 
-        WHERE location = ? AND experience = ? AND id != ?
-        LIMIT 5
-        ''',
-        (job['location'], job['experience'], job_id)
-    )
-    related_jobs = cursor.fetchall()
-    conn.close()
+    related_jobs = Job.query.filter(
+        Job.location == job.location,
+        Job.experience == job.experience,
+        Job.id != job_id
+    ).limit(5).all()  # 최대 5개의 관련 공고만 조회
 
     return render_template('job_detail.html', job=job, related_jobs=related_jobs)
+
+
 
 
 if __name__ == '__main__':

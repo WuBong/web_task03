@@ -70,14 +70,14 @@
                 {% if jobs %}
                     {% for job in jobs %}
                     <tr>
-                        <td>{{ loop.index + (page - 1) * per_page }}</td>
-                        <td>{{ job[2] }}</td>
-                        <td>{{ job[3] }}</td>
-                        <td>{{ job[6] }}</td>
-                        <td>{{ job[7] }}</td>
-                        <td>{{ job[5] }}</td>
+                        <td>{{ job.id }}</td>
+                        <td>{{ job.title }}</td>
+                        <td>{{ job.company }}</td>
+                        <td>{{ job.location }}</td>
+                        <td>{{ job.experience }}</td>
+                        <td>{{ job.deadline }}</td>
                         <td>
-                            <a href="/jobs/{{ job[0] }}" class="btn btn-sm btn-info">상세보기</a>
+                            <a href="/jobs/{{ job.id }}" class="btn btn-sm btn-info">상세보기</a>
                         </td>
                         <td>
                         
