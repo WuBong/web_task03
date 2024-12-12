@@ -82,6 +82,18 @@
                         <td>
                             <button class="btn btn-sm btn-primary apply-button" data-job-id="{{ job.id }}">지원하기</button>
                         </td>
+                        <td>
+                            <button 
+                                class="btn btn-sm {% if job.is_bookmarked %}btn-warning{% else %}btn-outline-warning{% endif %} bookmark-button" 
+                                data-job-id="{{ job.id }}" 
+                                data-bookmarked="{{ 'true' if job.is_bookmarked else 'false' }}">
+                                {% if job.is_bookmarked %}
+                                    ★ 북마크됨
+                                {% else %}
+                                    ☆ 북마크
+                                {% endif %}
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 {% else %}
@@ -160,4 +172,48 @@
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+    // 모든 북마크 버튼에 클릭 이벤트 추가
+    document.querySelectorAll(".bookmark-button").forEach(button => {
+        button.addEventListener("click", () => {
+            const jobId = button.getAttribute("data-job-id");
+            const isBookmarked = button.getAttribute("data-bookmarked") === "true";
+
+            // 북마크 토글 API 호출
+            fetch('/bookmarks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getCookie('token')}` // 쿠키에서 토큰 가져오기
+                },
+                body: JSON.stringify({ job_id: jobId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 버튼 상태 업데이트
+                    if (isBookmarked) {
+                        button.textContent = "☆ 북마크";
+                        button.setAttribute("data-bookmarked", "false");
+                        button.classList.remove("btn-warning");
+                        button.classList.add("btn-outline-warning");
+                    } else {
+                        button.textContent = "★ 북마크됨";
+                        button.setAttribute("data-bookmarked", "true");
+                        button.classList.remove("btn-outline-warning");
+                        button.classList.add("btn-warning");
+                    }
+                } else {
+                    alert(data.message || "북마크 처리에 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("북마크 요청 중 문제가 발생했습니다.");
+            });
+        });
+    });
+});
+
 </script>

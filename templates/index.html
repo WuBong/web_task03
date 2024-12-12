@@ -1,20 +1,47 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <div>
-        {% if is_authenticated %}
-            <p>로그인되었습니다!</p>
-            <a href="/logout">로그아웃</a> <!-- 로그아웃 버튼 표시 -->
-        {% else %}
-            <p>로그인되지 않았습니다.</p>
-            <a href="/login">로그인</a> <!-- 로그인 버튼 표시 -->
-        {% endif %}
+    <div class="container mt-5">
+        <div class="text-center">
+            {% if is_authenticated %}
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-heading">로그인 상태</h4>
+                    <p>로그인되었습니다!</p>
+                </div>
+                <a href="/logout" class="btn btn-danger btn-lg my-3">로그아웃</a>
+
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="/applications" class="btn btn-primary btn-block">지원 내역</a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/bookmarks" class="btn btn-warning btn-block">북마크 목록</a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/jobs" class="btn btn-info btn-block">채용 공고</a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/update" class="btn btn-secondary btn-block">회원 정보 수정</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning" role="alert">
+                    <h4 class="alert-heading">로그인 필요</h4>
+                    <p>로그인되지 않았습니다. 서비스를 이용하려면 로그인이 필요합니다.</p>
+                </div>
+                <a href="/login" class="btn btn-success btn-lg my-3">로그인</a>
+            {% endif %}
+        </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

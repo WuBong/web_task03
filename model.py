@@ -41,3 +41,8 @@ class Application(db.Model):
     def __repr__(self):
         return f"<Application {self.id} - User: {self.user.username}, Job: {self.job.title}, Status: {self.status}>"
 
+class Bookmark(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # 사용자 ID
+    job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)   # 북마크한 채용공고 ID
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)              # 북마크 추가 시간

@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from model import db, User
 import jwt
 import datetime
+import base64
 
 # 이메일 형식 검증 함수
 def is_valid_email(email):
@@ -28,8 +29,8 @@ def register():
 
         # 비밀번호 해싱 후 저장
         hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+        print(data['password'])
         new_user = User(username=data['username'], email=data['email'], password=hashed_password)
-
         db.session.add(new_user)
         db.session.commit()
 

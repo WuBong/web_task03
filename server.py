@@ -1,6 +1,6 @@
 # server.py
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
-from model import db, User, Job, Application
+from model import db, User, Job, Application, Bookmark
 from forms import register, login
 import jwt
 from sqlalchemy import or_
@@ -23,8 +23,6 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # 모든 모델(User, Application)을 한 데이터베이스에 생성
         print("All tables created successfully in users.db!")
-
-
 
 
 # 로그인 페이지 렌더링
@@ -137,8 +135,9 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row  # 딕셔너리 형식으로 데이터를 반환하도록 설정
     return conn
 
-@app.route('/jobs')
-def job_list():
+@app.route('/jobs', methods=['GET'])
+@token_required
+def job_list(current_user):
     # 기본값 설정
     page = request.args.get('page', 1, type=int)
     per_page = 20
@@ -147,7 +146,7 @@ def job_list():
     search_keyword = request.args.get('search', '')
     location_filter = request.args.get('location', '')
     experience_filter = request.args.get('experience', '')
-
+    
     # 기본 쿼리
     query = Job.query
 
@@ -207,6 +206,15 @@ def job_list():
 
     # 총 페이지 수 계산
     total_pages = (total_jobs // per_page) + (1 if total_jobs % per_page > 0 else 0)
+
+
+    # 현재 사용자가 북마크한 job_id 목록 조회
+    bookmarked_job_ids = {b.job_id for b in Bookmark.query.filter_by(user_id=current_user.id).all()}
+
+    # jobs에 북마크 상태 추가
+    jobs = query.offset(offset).limit(per_page).all()
+    for job in jobs:
+        job.is_bookmarked = job.id in bookmarked_job_ids
 
     # HTML 템플릿 렌더링
     return render_template(
@@ -328,6 +336,97 @@ def cancel_application(current_user, job_id):
 
     return jsonify({"message": "지원이 취소되었습니다."}), 200
 
+
+@app.route('/bookmarks', methods=['POST'])
+@token_required  # 인증 데코레이터
+def toggle_bookmark(current_user):
+    data = request.get_json()
+    job_id = data.get('job_id')
+
+    # job_id 유효성 확인
+    job = Job.query.get(job_id)
+    if not job:
+        return jsonify({"success": False, "message": "해당 공고를 찾을 수 없습니다."}), 404
+
+    # 북마크 여부 확인
+    bookmark = Bookmark.query.filter_by(user_id=current_user.id, job_id=job_id).first()
+    
+    if bookmark:
+        # 북마크 제거
+        db.session.delete(bookmark)
+        db.session.commit()
+        return jsonify({"success": True, "message": "북마크가 제거되었습니다."}), 200
+    else:
+        # 북마크 추가
+        new_bookmark = Bookmark(user_id=current_user.id, job_id=job_id)
+        db.session.add(new_bookmark)
+        db.session.commit()
+        return jsonify({"success": True, "message": "북마크가 추가되었습니다."}), 201
+    
+@app.route('/toggle_bookmark/<int:job_id>', methods=['POST'])
+@token_required
+def toggle_bookmarks(current_user, job_id):
+    # job_id 유효성 확인
+    job = Job.query.get(job_id)
+    if not job:
+        return jsonify({"success": False, "message": "해당 공고를 찾을 수 없습니다."}), 404
+
+    # 북마크 여부 확인
+    bookmark = Bookmark.query.filter_by(user_id=current_user.id, job_id=job_id).first()
+    
+    if bookmark:
+        # 북마크 제거
+        db.session.delete(bookmark)
+        db.session.commit()
+        return jsonify({"success": True, "message": "북마크가 제거되었습니다."}), 200
+    else:
+        # 북마크 추가
+        new_bookmark = Bookmark(user_id=current_user.id, job_id=job_id)
+        db.session.add(new_bookmark)
+        db.session.commit()
+        return jsonify({"success": True, "message": "북마크가 추가되었습니다."}), 201
+
+@app.route('/bookmarks')
+@token_required  # 인증 데코레이터
+def bookmarked_jobs(current_user):
+    # 기본값 설정
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    # 북마크된 공고 조회 (최신순 정렬)
+    query = db.session.query(
+        Job.id,
+        Job.title,
+        Job.company,
+        Job.location,
+        Job.experience,
+        Job.deadline,
+        Bookmark.id.label('bookmark_id')  # 북마크된 여부 확인용
+    ).join(Bookmark, Bookmark.job_id == Job.id).filter(
+        Bookmark.user_id == current_user.id
+    ).order_by(Bookmark.created_at.desc())
+
+    print(query)
+
+    # 총 북마크 수 계산
+    total_bookmarks = query.count()
+
+    # 페이지네이션 적용
+    bookmarked_jobs = query.offset(offset).limit(per_page).all()
+
+    # 총 페이지 수 계산
+    total_pages = (total_bookmarks // per_page) + (1 if total_bookmarks % per_page > 0 else 0)
+
+    # HTML 템플릿 렌더링
+    return render_template(
+        'bookmarks.html',
+        jobs=bookmarked_jobs,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        total_jobs=total_bookmarks
+    )
 
 
 
