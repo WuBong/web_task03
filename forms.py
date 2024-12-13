@@ -54,7 +54,7 @@ def login():
         if not user or not user.check_password(data['password']):
             return jsonify({'message': 'Invalid email or password'}), 401
 
-        # 로그인 성공 시 JWT 토큰 생성
+        # 로그인 성공 시 JWT 토큰 생성 jwt.encode 사용시 기본적으로 base64 인코딩 사용
         token = jwt.encode(
             {'id': user.id, 'email': user.email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
             app.config['SECRET_KEY'],
@@ -64,8 +64,8 @@ def login():
         header, payload, signature = token.split('.')
         decoded_header = base64.urlsafe_b64decode(header + '==').decode('utf-8')
         decoded_payload = base64.urlsafe_b64decode(payload + '==').decode('utf-8')
-        print(header)
-        print(payload)        
+        print(header) 
+        print(payload) #디코딩 전        
         print(decoded_header)
         print(decoded_payload)
 

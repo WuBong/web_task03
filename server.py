@@ -8,7 +8,10 @@ import base64
 import re
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
-import sqlite3
+from flask import Flask, request, jsonify
+
+
+
 
 app = Flask(__name__)
 
@@ -23,7 +26,6 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # 모든 모델(User, Application)을 한 데이터베이스에 생성
         print("All tables created successfully in users.db!")
-
 
 # 로그인 페이지 렌더링
 @app.route('/login', methods=['GET'])
@@ -48,22 +50,56 @@ def login_user():
         if not user or not user.check_password(data['password']):
             return jsonify({'message': 'Invalid email or password'}), 401
 
-        # 로그인 성공 시 JWT 토큰 생성 jwt.encode 사용시 기본적으로 base64 인코딩 사용
-        token = jwt.encode(
+                # 로그인 성공 시 Access Token 생성 (유효 기간 1시간)
+        access_token = jwt.encode(
             {'id': user.id, 'email': user.email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
             app.config['SECRET_KEY'],
             algorithm='HS256'
         )
-        # 토큰 디코딩 (Base64URL 디코딩)
-        header, payload, signature = token.split('.')
-        decoded_header = base64.urlsafe_b64decode(header + '==').decode('utf-8')
-        decoded_payload = base64.urlsafe_b64decode(payload + '==').decode('utf-8')
-        print(header) 
-        print(payload) #디코딩 전        
-        print(decoded_header)
-        print(decoded_payload)
 
-        return jsonify({'message': 'Login successful', 'token': token}), 200
+        # Refresh Token 생성 (유효 기간 30일)
+        refresh_token = jwt.encode(
+            {'id': user.id, 'email': user.email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)},
+            app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        
+
+        return jsonify({'message': 'Login successful', 'access_token': access_token, 'refresh_token': refresh_token}), 200
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+
+@app.route('/refresh', methods=['POST'])
+def refresh_token():
+    try:
+        data = request.get_json()
+
+        if not data or not data.get('refresh_token'):
+            return jsonify({'message': 'Refresh token is required'}), 400
+
+        # Refresh token 검증
+        try:
+            decoded_token = jwt.decode(data['refresh_token'], app.config['SECRET_KEY'], algorithms=["HS256"])
+            user_id = decoded_token['id']
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Refresh token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Invalid refresh token'}), 401
+
+        # 새 Access Token 발급
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Access Token 생성 (1시간 유효)
+        access_token = jwt.encode(
+            {'id': user.id, 'email': user.email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
+            app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+
+        return jsonify({'access_token': access_token}), 200
+
     except Exception as e:
         return jsonify({'message': f'Error: {str(e)}'}), 500
 
@@ -105,21 +141,31 @@ def register_user():
         return jsonify({'message': f'Error: {str(e)}'}), 500
 
 
-# 메인 페이지 (로그인 여부에 따라 다르게 렌더링)
 @app.route('/', methods=['GET'])
 def index():
-    token = request.cookies.get('token')  # 쿠키에서 토큰을 가져옵니다
+    token = request.cookies.get('access_token')  # 쿠키에서 Access Token을 가져옵니다
+    refresh_token = request.cookies.get('refresh_token')  # 쿠키에서 Refresh Token을 가져옵니다
     user_authenticated = False
 
     if token:
         try:
-            # JWT 토큰 유효성 검사
+            # JWT 토큰 유효성 검사 (Access Token)
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             user_authenticated = True  # 인증된 사용자로 처리
         except jwt.ExpiredSignatureError:
-            pass  # 토큰이 만료되었으면 인증되지 않은 상태로 처리
+            # Access Token이 만료되었으면 Refresh Token을 사용하여 새로운 Access Token을 요청
+            if refresh_token:
+                # Refresh Token이 있을 경우, 토큰 갱신 요청
+                try:
+                    decoded_refresh_token = jwt.decode(refresh_token, app.config['SECRET_KEY'], algorithms=["HS256"])
+                    # 새 Access Token을 발급 받기 위해 refresh_token을 사용
+                    user_authenticated = True  # 인증된 사용자로 처리
+                except jwt.ExpiredSignatureError:
+                    pass  # Refresh Token도 만료되었으면 인증되지 않은 상태로 처리
+                except jwt.InvalidTokenError:
+                    pass  # Refresh Token이 유효하지 않으면 인증되지 않은 상태로 처리
         except jwt.InvalidTokenError:
-            pass  # 유효하지 않은 토큰일 경우 처리
+            pass  # 유효하지 않은 Access Token일 경우 인증되지 않은 상태로 처리
 
     return render_template('index.html', is_authenticated=user_authenticated)
 
@@ -129,14 +175,15 @@ def index():
 @app.route('/logout', methods=['GET'])
 def logout():
     response = redirect(url_for('index'))
-    response.delete_cookie('token')  # 쿠키에서 토큰 삭제
+    response.delete_cookie('access_token')  # 쿠키에서 토큰 삭제 (Access Token)
+    response.delete_cookie('refresh_token')  # 쿠키에서 Refresh Token 삭제
     return response
 
 # JWT 토큰 유효성 검사를 위한 미들웨어
 def token_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = request.cookies.get('token')  # 쿠키에서 토큰을 가져옵니다
+        token = request.cookies.get('access_token')  # 쿠키에서 토큰을 가져옵니다
         if not token:
             return jsonify({'message': 'Token is missing!'}), 403  # 토큰이 없으면 403 에러
 
@@ -153,6 +200,7 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
 
     return decorated_function
+
 
 # 회원정보 수정 페이지 렌더링 (로그인한 사용자만 접근 가능)
 @app.route('/update', methods=['GET'])
@@ -189,10 +237,6 @@ def update_user(current_user):
         return jsonify({'message': f'Error: {str(e)}'}), 500
     
 
-def get_db_connection():
-    conn = sqlite3.connect('webcrawling/saramin_jobs.db')
-    conn.row_factory = sqlite3.Row  # 딕셔너리 형식으로 데이터를 반환하도록 설정
-    return conn
 
 @app.route('/jobs', methods=['GET'])
 @token_required

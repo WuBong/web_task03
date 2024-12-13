@@ -1,4 +1,3 @@
-<!-- login.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -28,50 +27,55 @@
     </div>
 
     <script>
-        document.getElementById("loginForm").addEventListener("submit", function(event) {
-            event.preventDefault();  // 기본 폼 제출을 막음
+ document.getElementById("loginForm").addEventListener("submit", function(event) {
+    event.preventDefault();  // 기본 폼 제출을 막음
 
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-            const errorMessage = document.getElementById("errorMessage");
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const errorMessage = document.getElementById("errorMessage");
 
-            // 이메일 형식 검증
-            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-            if (!emailRegex.test(email)) {
-                errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
-                return;
-            }
+    // 이메일 형식 검증
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    if (!emailRegex.test(email)) {
+        errorMessage.textContent = "유효한 이메일 주소를 입력해주세요.";
+        return;
+    }
 
-            // 비밀번호 확인
-            if (password.trim() === "") {
-                errorMessage.textContent = "비밀번호를 입력해주세요.";
-                return;
-            }
+    // 비밀번호 확인
+    if (password.trim() === "") {
+        errorMessage.textContent = "비밀번호를 입력해주세요.";
+        return;
+    }
 
-            const data = { email, password };
-            // 로그인 후 토큰을 쿠키에 저장하는 코드
-            fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.token) {
-                    alert("로그인 성공!");
-                    // 쿠키에 JWT 토큰 저장
-                    document.cookie = `token=${data.token}; path=/; max-age=3600`;  // 1시간 동안 유효
-                    window.location.href = "/";  // 로그인 후 홈 페이지로 리디렉션
-                } else {
-                    errorMessage.textContent = data.message;  // 에러 메시지 표시
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                errorMessage.textContent = "서버와의 연결에 문제가 발생했습니다.";
-            });
+    const data = { email, password };
 
-        });
+    // 로그인 후 토큰을 쿠키에 저장하는 코드
+    fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())  // JSON으로 응답을 받기
+    .then(data => {
+        if (data.access_token && data.refresh_token) {
+            alert("로그인 성공!");
+
+            // 쿠키에 JWT 토큰 저장 (Access Token과 Refresh Token)
+            document.cookie = `access_token=${data.access_token}; path=/; max-age=3600`;  // 1시간 동안 유효
+            document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=86400`;  // 1일 동안 유효
+
+            window.location.href = "/";  // 로그인 후 홈 페이지로 리디렉션
+        } else {
+            errorMessage.textContent = data.message || "로그인 실패";  // 메시지 표시
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        errorMessage.textContent = "서버와의 연결에 문제가 발생했습니다.";
+    });
+
+});
+
     </script>
 </body>
 </html>
