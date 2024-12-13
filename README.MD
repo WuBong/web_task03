@@ -1,4 +1,11 @@
-1. 프로젝트 실행법
+(초간단 실행법)
+1. pip install -r requirements.txt
+
+2. python server.py
+
+
+
+(프로젝트 실행법) (db가 없을 떄)
 프로젝트 폴더에서 터미널에 
 pip install -r requirements.txt
 
@@ -6,8 +13,7 @@ pip install -r requirements.txt
 
 
 webcrawling 에 있는
-webcrawling.py를
-python webcrawling.py
+webcrawling.py를 python webcrawling.py
 를 입력해 실행시킨다.
 saramin_jobs.db가 생기면
 
