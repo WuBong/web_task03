@@ -174,7 +174,6 @@ def index():
 
 
 # 로그아웃 처리
-# 로그아웃 처리
 @app.route('/logout', methods=['GET'])
 def logout():
     response = redirect(url_for('index'))
@@ -239,7 +238,28 @@ def update_user(current_user):
     except Exception as e:
         return jsonify({'message': f'Error: {str(e)}'}), 500
     
+# 회원 탈퇴 (DELETE)
+@app.route('/user', methods=['DELETE'])
+@token_required
+def delete_user(current_user):
+    try:
+        # 사용자 삭제 로직 (예: current_user 삭제)
+        db.session.delete(current_user)
+        db.session.commit()
 
+        # 쿠키에서 토큰 삭제
+        response = jsonify({'message': 'User account deleted successfully'})
+        response.delete_cookie('access_token', path='/')
+        response.delete_cookie('refresh_token', path='/')
+
+        # 추가적으로 토큰이 HttpOnly와 Secure로 설정되었으면, 이를 명시해줘야 합니다.
+        response.delete_cookie('access_token', path='/', secure=True, httponly=True)
+        response.delete_cookie('refresh_token', path='/', secure=True, httponly=True)
+
+        return response, 200
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+    
 
 @app.route('/jobs', methods=['GET'])
 @token_required
