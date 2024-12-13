@@ -60,6 +60,14 @@ def login():
             app.config['SECRET_KEY'],
             algorithm='HS256'
         )
+        # 토큰 디코딩 (Base64URL 디코딩)
+        header, payload, signature = token.split('.')
+        decoded_header = base64.urlsafe_b64decode(header + '==').decode('utf-8')
+        decoded_payload = base64.urlsafe_b64decode(payload + '==').decode('utf-8')
+        print(header)
+        print(payload)        
+        print(decoded_header)
+        print(decoded_payload)
 
         return jsonify({'message': 'Login successful', 'token': token}), 200
     except Exception as e:
