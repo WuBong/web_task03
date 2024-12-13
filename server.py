@@ -1,11 +1,11 @@
 # server.py
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from model import db, User, Job, Application, Bookmark
-from forms import register, login
 import jwt
 from sqlalchemy import or_
 from datetime import datetime
-
+import base64
+import re
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 import sqlite3
@@ -33,17 +33,76 @@ def login_page():
 # 로그인 처리 API
 @app.route('/login', methods=['POST'])
 def login_user():
-    return login()
+    import datetime
+    try:
+        data = request.get_json()
+
+        # 요청 데이터가 없거나 필요한 정보가 없을 경우
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({'message': 'Invalid input'}), 400
+
+        # 이메일로 사용자 확인
+        user = User.query.filter_by(email=data['email']).first()
+
+        # 사용자가 없거나 비밀번호가 맞지 않으면
+        if not user or not user.check_password(data['password']):
+            return jsonify({'message': 'Invalid email or password'}), 401
+
+        # 로그인 성공 시 JWT 토큰 생성 jwt.encode 사용시 기본적으로 base64 인코딩 사용
+        token = jwt.encode(
+            {'id': user.id, 'email': user.email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
+            app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        # 토큰 디코딩 (Base64URL 디코딩)
+        header, payload, signature = token.split('.')
+        decoded_header = base64.urlsafe_b64decode(header + '==').decode('utf-8')
+        decoded_payload = base64.urlsafe_b64decode(payload + '==').decode('utf-8')
+        print(header) 
+        print(payload) #디코딩 전        
+        print(decoded_header)
+        print(decoded_payload)
+
+        return jsonify({'message': 'Login successful', 'token': token}), 200
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
 
 # 회원가입 페이지 렌더링
 @app.route('/signup', methods=['GET'])
 def signup_page():
     return render_template('signup.html')
 
+# 이메일 형식 검증 함수
+def is_valid_email(email):
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(email_regex, email) is not None
+
 # 회원가입 처리 API
 @app.route('/register', methods=['POST'])
 def register_user():
-    return register()
+    try:
+        data = request.get_json()
+
+        if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+            return jsonify({'message': 'Invalid input'}), 400
+
+        # 이메일 형식 검증
+        if not is_valid_email(data['email']):
+            return jsonify({'message': 'Invalid email format'}), 400
+
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({'message': 'Email already registered'}), 409
+
+        # 비밀번호 해싱 후 저장
+        hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+        print(data['password'])
+        new_user = User(username=data['username'], email=data['email'], password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({'message': 'User registered successfully'}), 201
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
 
 
 # 메인 페이지 (로그인 여부에 따라 다르게 렌더링)
