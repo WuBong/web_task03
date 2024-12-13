@@ -19,7 +19,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
 
+
 db.init_app(app)
+
+
 
 # 기존 데이터베이스에 새로운 테이블 추가
 if __name__ == '__main__':
@@ -347,11 +350,12 @@ def get_job_detail(job_id):
     # 관련 공고 추천 (location 및 experience 기준)
     related_jobs = Job.query.filter(
         Job.location == job.location,
-        Job.experience == job.experience,
         Job.id != job_id
     ).limit(5).all()  # 최대 5개의 관련 공고만 조회
 
-    return render_template('job_detail.html', job=job, related_jobs=[])
+    print(related_jobs)
+
+    return render_template('job_detail.html', job=job, related_jobs=related_jobs)
 
 @app.route('/applications', methods=['POST'])
 @token_required  # 인증 확인 데코레이터
