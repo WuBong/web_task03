@@ -120,7 +120,7 @@
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
-
+    
     document.addEventListener("DOMContentLoaded", () => {
     // 모든 북마크 버튼에 클릭 이벤트 추가
     document.querySelectorAll(".bookmark-button").forEach(button => {
@@ -163,4 +163,5 @@
         });
     });
 });
+
 </script>
