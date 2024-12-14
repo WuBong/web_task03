@@ -1,11 +1,19 @@
-(초간단 실행법)
+(초간단 실행법) 윈도우에서 파이썬과 pip가 잘 작동될 때
 1. pip install -r requirements.txt
 
 2. python server.py
 
+(우분투에서 돌릴때)
+1. sudo apt install python3-venv
+2. python3 -m venv myenv
+3. source myenv/bin/activate
+4. pip install -r requirements.txt
+5. python server.py
+
+Jcloud 땜시 포트를 3000번으로 바꿔놓음
 
 
-(프로젝트 실행법) (db가 없을 떄)
+(db가 없을 떄)
 프로젝트 폴더에서 터미널에 
 pip install -r requirements.txt
 
