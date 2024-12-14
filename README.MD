@@ -8,7 +8,7 @@
 1. sudo apt install python3-venv
 2. python3 -m venv myenv
 3. source myenv/bin/activate
-프로젝트 폴더 가서
+프로젝트 폴더 가서(cd /web_task03)
 4. pip install -r requirements.txt
 5. python server.py
 
@@ -40,3 +40,14 @@ python server.py
 -정리-
 webcrawling폴더에서 크롤링하면, 크롤링한 데이터를
 server.py 실행할 때 유저 데이터베이스 테이블과 합치게 됨(직무데이터_동기화_함수.txt)
+
+
+에러처리
+Error: module 'jwt' has no attribute 'encode'
+
+로그인시 저 에러가 뜨게 된다면
+pip uninstall jwt
+pip uninstall PyJWT
+pip install PyJWT
+
+하고 다시 서버를 키면 된다.
