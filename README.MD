@@ -7,6 +7,7 @@
 1. sudo apt install python3-venv
 2. python3 -m venv myenv
 3. source myenv/bin/activate
+프로젝트 폴더 가서
 4. pip install -r requirements.txt
 5. python server.py
 
